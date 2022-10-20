@@ -1,3 +1,4 @@
+# app/controllers/api/v1/movies_controller.rb
 class Api::V1::MoviesController < Api::V1::BaseController
   API_KEY = Rails.application.credentials.tmdb_api_key
   def index

@@ -1,3 +1,4 @@
+# app/jobs/movie_details_job.rb
 class MovieDetailsJob < ApplicationJob
   queue_as :default
 
