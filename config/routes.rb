@@ -1,5 +1,4 @@
 Rails.application.routes.draw do
-  get 'home/index'
   devise_for :users,
              path: '',
              path_names: {
@@ -12,14 +11,10 @@ Rails.application.routes.draw do
                registrations: 'users/registrations'
              }
 
-  # namespace :api, defaults: { format: :json } do
-  #   namespace :v1 do
-  #     # Devise routes for API clients (custom sessions controller)
-  #     devise_scope :user do
-  #       post 'users/sign_in', to: 'users/sessions#create'
-  #       delete 'users/sign_out', to: 'users/sessions#destroy'
-  #       post 'users', to: 'users/registrations#create'
-  #     end
-  #   end
-  # end
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      get 'index', to: 'movies#index'
+      get 'movies/:tmdb_movie_id', to: 'movies#show'
+    end
+  end
 end

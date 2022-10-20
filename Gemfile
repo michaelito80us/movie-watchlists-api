@@ -48,4 +48,8 @@ end
 
 gem 'devise'
 gem 'devise-jwt'
-gem "jsonapi-serializer"
+gem 'faraday'
+gem 'jsonapi-serializer'
+
+gem 'sidekiq'
+gem 'sidekiq-failures', '~> 1.0'
