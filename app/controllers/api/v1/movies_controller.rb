@@ -49,8 +49,6 @@ class Api::V1::MoviesController < Api::V1::BaseController
     # render the data
     useful_data = JSON.parse(response.body)['results']
 
-    # render MovieSerializer.new(useful_data).serializable_hash[:data][:attributes]
-    # render json: MovieSerializer.new(useful_data).serializable_hash
     results = []
     useful_data.each do |movie|
       item = {}
@@ -67,47 +65,50 @@ class Api::V1::MoviesController < Api::V1::BaseController
   end
 
   def show
-    # connect to the tmdb api
-    # get the data
     id = params['tmdb_movie_id']
-    movie = Movie.find_by tmdb_movie_id: id ||= api_call(id)
-    if movie.nil?
-      url = "https://api.themoviedb.org/3/movie/#{id}?api_key=#{API_KEY}&language=en-US"
-      response = Faraday.get(url)
-      # render the data
-      useful_data = JSON.parse(response.body)
-      debugger
-      results = {
-        tmdb_movie_id: useful_data['id'],
-        name: useful_data['title'],
-        overview: useful_data['overview'],
-        release_date: useful_data['release_date'],
-        poster_url: "https://image.tmdb.org/t/p/w185#{useful_data['poster_path']}",
-        score: (useful_data['vote_average'] * 10).to_i,
-        duration: useful_data['runtime'],
-        duration_string: "#{useful_data['runtime'] / 60}h #{useful_data['runtime'] % 60}m",
-        genres: useful_data['genres'].map { |genre| genre['name'] }
-      }
 
-      render json: results
-    else
-      render json: current_movie
-    end
+    movie = Movie.find_by tmdb_movie_id: id
+    movie = show_api_call(id) if movie.nil?
+
+    render json: MovieSerializer.new(movie)
   end
 
   private
 
-  def api_cal(id)
-    url = "https://api.themoviedb.org/3/movie/#{id}?api_key=#{API_KEY}&language=en-US"
+  def show_api_call(id)
+    puts '***** I MADE AN API CALL *****'
+    url = "https://api.themoviedb.org/3/movie/#{id}?api_key=#{API_KEY}&language=en-US&append_to_response=credits"
     response = Faraday.get(url)
     # render the data
     useful_data = JSON.parse(response.body)
+
+    movie = Movie.new
+    movie.name = useful_data['title']
+    movie.duration = (useful_data['runtime']).to_i
+    movie.score = (useful_data['vote_average'] * 10).to_i
+    movie.overview = useful_data['overview']
+    movie.release_date = Date.parse(useful_data['release_date'])
+    movie.poster_url = "https://image.tmdb.org/t/p/w185#{useful_data['poster_path']}"
+    movie.tmdb_movie_id = useful_data['id']
+    movie.save
+    useful_data['genres'].each do |genre|
+      movie_genre = MovieGenre.new
+      movie_genre.movie = movie
+      movie_genre.genre = Genre.find_by name: genre['name']
+      movie_genre.genre = Genre.create(name: genre['name'], tmdb_genre_id: genre['id']) if movie_genre.genre.nil?
+      movie_genre.save
+    end
+    useful_data['credits']['cast'].first(10).each do |cast|
+      movie_cast = MovieCast.new
+      movie_cast.movie = movie
+      movie_cast.character = cast['character']
+      movie_cast.cast = Cast.find_by tmdb_cast_id: cast['id']
+      if movie_cast.cast.nil?
+        movie_cast.cast = Cast.create(name: cast['name'], tmdb_cast_id: cast['id'],
+                                      image_url: "https://image.tmdb.org/t/p/w185#{cast['profile_path']}")
+      end
+      movie_cast.save
+    end
+    movie
   end
 end
-
-### for converting minutes into "xxxh xxxm"
-# def time_conversion(minutes)
-#     hours = minutes / 60
-#     rest = minutes % 60
-#     return "#{hours}h #{rest}m"
-# end
