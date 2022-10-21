@@ -64,7 +64,12 @@ class Api::V1::MoviesController < Api::V1::BaseController
       results << item
     end
 
-    render json: results
+    if user_signed_in?
+      render json: { results:, movie: MovieSerializer.new(Movie.first).serializable_hash[:data][:attributes] },
+             status: :ok
+    else
+      render json: results, status: :ok
+    end
   end
 
   def show

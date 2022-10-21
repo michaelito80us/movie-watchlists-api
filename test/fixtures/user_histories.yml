@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user: one
+  movie: one
+  visited_on: 2022-10-21 16:43:44
+
+two:
+  user: two
+  movie: two
+  visited_on: 2022-10-21 16:43:44
