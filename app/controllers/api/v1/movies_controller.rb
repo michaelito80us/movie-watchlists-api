@@ -1,7 +1,10 @@
 # app/controllers/api/v1/movies_controller.rb
 class Api::V1::MoviesController < Api::V1::BaseController
   API_KEY = Rails.application.credentials.tmdb_api_key
+  skip_before_action :authenticate_user!, only: %i[index show]
+
   def index
+    puts "user signed in? #{user_signed_in?}"
     # for the images:
     # "images": {
     #         "base_url": "http://image.tmdb.org/t/p/",
@@ -50,14 +53,14 @@ class Api::V1::MoviesController < Api::V1::BaseController
     useful_data = JSON.parse(response.body)['results']
 
     results = []
-    useful_data.each do |movie|
+    useful_data.each do |_movie_data|
       item = {}
-      item[:tmbd_movie_id] = movie['id']
-      item[:name] = movie['title']
-      item[:overview] = movie['overview']
-      item[:release_year] = movie['release_date'][0...4]
-      item[:poster_url] = "https://image.tmdb.org/t/p/w185#{movie['poster_path']}"
-      item[:score] = (movie['vote_average'] * 10).to_i
+      item[:tmbd_movie_id] = _movie_data['id']
+      item[:name] = _movie_data['title']
+      item[:overview] = _movie_data['overview']
+      item[:release_year] = _movie_data['release_date'][0...4]
+      item[:poster_url] = "https://image.tmdb.org/t/p/w185#{_movie_data['poster_path']}"
+      item[:score] = (_movie_data['vote_average'] * 10).to_i
       results << item
     end
 
@@ -70,35 +73,36 @@ class Api::V1::MoviesController < Api::V1::BaseController
     movie = Movie.find_by tmdb_movie_id: id
     movie = show_api_call(id) if movie.nil?
 
-    render json: MovieSerializer.new(movie)
+    render json: MovieSerializer.new(movie).serializable_hash[:data][:attributes]
   end
 
   private
 
-  def show_api_call(id)
-    puts '***** I MADE AN API CALL *****'
-    url = "https://api.themoviedb.org/3/movie/#{id}?api_key=#{API_KEY}&language=en-US&append_to_response=credits"
-    response = Faraday.get(url)
-    # render the data
-    useful_data = JSON.parse(response.body)
+  def new_movie(data)
+    new_movie = Movie.new
+    new_movie.name = data['title']
+    new_movie.score = (data['vote_average'] * 10).to_i
+    new_movie.overview = data['overview']
+    new_movie.release_date = Date.parse(data['release_date'])
+    new_movie.poster_url = "https://image.tmdb.org/t/p/w185#{data['poster_path']}"
+    new_movie.tmdb_movie_id = data['id']
+    new_movie
+  end
 
-    movie = Movie.new
-    movie.name = useful_data['title']
-    movie.duration = (useful_data['runtime']).to_i
-    movie.score = (useful_data['vote_average'] * 10).to_i
-    movie.overview = useful_data['overview']
-    movie.release_date = Date.parse(useful_data['release_date'])
-    movie.poster_url = "https://image.tmdb.org/t/p/w185#{useful_data['poster_path']}"
-    movie.tmdb_movie_id = useful_data['id']
-    movie.save
-    useful_data['genres'].each do |genre|
+  def add_genres(movie_data, movie)
+    movie_data['genres'].each do |genre|
       movie_genre = MovieGenre.new
       movie_genre.movie = movie
       movie_genre.genre = Genre.find_by name: genre['name']
       movie_genre.genre = Genre.create(name: genre['name'], tmdb_genre_id: genre['id']) if movie_genre.genre.nil?
       movie_genre.save
     end
-    useful_data['credits']['cast'].first(10).each do |cast|
+  end
+
+  def add_cast(movie_data, movie)
+    movie_data['credits']['cast'].each do |cast|
+      next unless cast['known_for_department'] == 'Acting' && !cast['profile_path'].nil?
+
       movie_cast = MovieCast.new
       movie_cast.movie = movie
       movie_cast.character = cast['character']
@@ -108,7 +112,22 @@ class Api::V1::MoviesController < Api::V1::BaseController
                                       image_url: "https://image.tmdb.org/t/p/w185#{cast['profile_path']}")
       end
       movie_cast.save
+      break if movie.casts.count == 10
     end
+  end
+
+  def show_api_call(id)
+    puts '***** I MADE AN API CALL *****'
+    url = "https://api.themoviedb.org/3/movie/#{id}?api_key=#{API_KEY}&language=en-US&append_to_response=credits,recommendations"
+    response = Faraday.get(url)
+    # render the data
+    movie_data = JSON.parse(response.body)
+
+    movie = new_movie(movie_data)
+    movie.duration = (movie_data['runtime']).to_i
+    movie.save
+    add_genres(movie_data, movie)
+    add_cast(movie_data, movie)
     movie
   end
 end
