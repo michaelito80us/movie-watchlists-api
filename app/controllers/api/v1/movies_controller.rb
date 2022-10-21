@@ -53,14 +53,14 @@ class Api::V1::MoviesController < Api::V1::BaseController
     useful_data = JSON.parse(response.body)['results']
 
     results = []
-    useful_data.each do |_movie_data|
+    useful_data.each do |movie_data|
       item = {}
-      item[:tmbd_movie_id] = _movie_data['id']
-      item[:name] = _movie_data['title']
-      item[:overview] = _movie_data['overview']
-      item[:release_year] = _movie_data['release_date'][0...4]
-      item[:poster_url] = "https://image.tmdb.org/t/p/w185#{_movie_data['poster_path']}"
-      item[:score] = (_movie_data['vote_average'] * 10).to_i
+      item[:tmbd_movie_id] = movie_data['id']
+      item[:name] = movie_data['title']
+      item[:overview] = movie_data['overview']
+      item[:release_year] = movie_data['release_date'][0...4]
+      item[:poster_url] = "https://image.tmdb.org/t/p/w185#{movie_data['poster_path']}"
+      item[:score] = (movie_data['vote_average'] * 10).to_i
       results << item
     end
 
