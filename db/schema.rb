@@ -32,9 +32,10 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_21_084344) do
   create_table "movie_casts", force: :cascade do |t|
     t.bigint "movie_id", null: false
     t.bigint "cast_id", null: false
+    t.string "character"
+    t.string "job"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "character"
     t.index ["cast_id"], name: "index_movie_casts_on_cast_id"
     t.index ["movie_id"], name: "index_movie_casts_on_movie_id"
   end
@@ -56,9 +57,10 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_21_084344) do
     t.date "release_date"
     t.string "poster_url"
     t.integer "tmdb_movie_id"
+    t.string "trailer_url"
+    t.boolean "complete_data", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.boolean "full_details", default: false
   end
 
   create_table "user_histories", force: :cascade do |t|
@@ -101,8 +103,8 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_21_084344) do
     t.string "name"
     t.string "description"
     t.bigint "user_id", null: false
-    t.integer "unwatched_runtime"
-    t.integer "total_items"
+    t.integer "unwatched_runtime", default: 0
+    t.integer "total_items", default: 0
     t.integer "score_sum"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

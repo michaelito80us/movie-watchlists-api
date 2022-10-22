@@ -7,7 +7,9 @@ class CreateMovies < ActiveRecord::Migration[7.0]
       t.string :overview
       t.date :release_date
       t.string :poster_url
-      t.integer :tmbd_movie_id
+      t.integer :tmdb_movie_id
+      t.string :trailer_url
+      t.boolean :complete_data, default: false
 
       t.timestamps
     end

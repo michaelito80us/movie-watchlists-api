@@ -15,6 +15,8 @@ Rails.application.routes.draw do
     namespace :v1 do
       get 'index', to: 'movies#index'
       get 'movies/:tmdb_movie_id', to: 'movies#show'
+      resources :watchlists
+      resources :history, only: %i[index]
     end
   end
 end

@@ -22,7 +22,8 @@ class MovieSerializer
       {
         actor_name: movie_cast.cast.name,
         character: movie_cast.character,
-        image_url: movie_cast.cast.image_url
+        image_url: movie_cast.cast.image_url,
+        job: movie_cast.job
       }
     end
   end
