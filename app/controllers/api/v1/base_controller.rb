@@ -3,8 +3,12 @@ class Api::V1::BaseController < ApplicationController
   rescue_from StandardError,                with: :internal_server_error
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
 
-  skip_before_action :verify_authenticity_token
+  # skip_before_action :verify_authenticity_token
   before_action :authenticate_user!
+
+  def render_error(object)
+    render json: { status: 'fail', res: 'fail', errors: object.errors.full_messages }, status: :unprocessable_entity
+  end
 
   private
 

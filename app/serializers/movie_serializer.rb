@@ -1,7 +1,8 @@
 # app/serializers/movie_serializer.rb
 class MovieSerializer
   include JSONAPI::Serializer
-  attributes :name, :id, :duration, :overview, :score, :release_date, :poster_url, :tmdb_movie_id
+  attributes :name, :id, :duration, :overview, :score, :release_date, :poster_url, :tmdb_movie_id, :trailer_url,
+             :popularity
   # has_many :movie_casts
   # has_many :casts, through: :movie_casts
 

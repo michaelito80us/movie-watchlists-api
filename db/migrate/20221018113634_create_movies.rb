@@ -9,6 +9,7 @@ class CreateMovies < ActiveRecord::Migration[7.0]
       t.string :poster_url
       t.integer :tmdb_movie_id
       t.string :trailer_url
+      t.decimal :popularity
       t.boolean :complete_data, default: false
 
       t.timestamps

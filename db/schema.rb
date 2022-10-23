@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2022_10_21_084344) do
+ActiveRecord::Schema[7.0].define(version: 2022_10_22_152533) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -29,6 +29,13 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_21_084344) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "genres_movies", id: false, force: :cascade do |t|
+    t.bigint "movie_id"
+    t.bigint "genre_id"
+    t.index ["genre_id"], name: "index_genres_movies_on_genre_id"
+    t.index ["movie_id"], name: "index_genres_movies_on_movie_id"
+  end
+
   create_table "movie_casts", force: :cascade do |t|
     t.bigint "movie_id", null: false
     t.bigint "cast_id", null: false
@@ -40,15 +47,6 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_21_084344) do
     t.index ["movie_id"], name: "index_movie_casts_on_movie_id"
   end
 
-  create_table "movie_genres", force: :cascade do |t|
-    t.bigint "movie_id", null: false
-    t.bigint "genre_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["genre_id"], name: "index_movie_genres_on_genre_id"
-    t.index ["movie_id"], name: "index_movie_genres_on_movie_id"
-  end
-
   create_table "movies", force: :cascade do |t|
     t.string "name"
     t.integer "duration"
@@ -58,9 +56,17 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_21_084344) do
     t.string "poster_url"
     t.integer "tmdb_movie_id"
     t.string "trailer_url"
+    t.decimal "popularity"
     t.boolean "complete_data", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "movies_genres", id: false, force: :cascade do |t|
+    t.bigint "movie_id"
+    t.bigint "genre_id"
+    t.index ["genre_id"], name: "index_movies_genres_on_genre_id"
+    t.index ["movie_id"], name: "index_movies_genres_on_movie_id"
   end
 
   create_table "user_histories", force: :cascade do |t|
@@ -113,8 +119,6 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_21_084344) do
 
   add_foreign_key "movie_casts", "casts"
   add_foreign_key "movie_casts", "movies"
-  add_foreign_key "movie_genres", "genres"
-  add_foreign_key "movie_genres", "movies"
   add_foreign_key "user_histories", "movies"
   add_foreign_key "user_histories", "users"
   add_foreign_key "watchlist_movies", "movies"

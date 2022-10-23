@@ -50,21 +50,29 @@ class Api::V1::MoviesController < Api::V1::BaseController
     url = "https://api.themoviedb.org/3/discover/movie?api_key=#{API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1&with_watch_monetization_types=flatrate"
     response = Faraday.get(url)
     # render the data
-    useful_data = JSON.parse(response.body)['results']
+    search_results = JSON.parse(response.body)['results']
 
     results = []
-    useful_data.each do |movie_data|
-      item = {}
-      item[:tmbd_movie_id] = movie_data['id']
-      item[:name] = movie_data['title']
-      item[:overview] = movie_data['overview']
-      item[:release_year] = movie_data['release_date'][0...4]
-      item[:poster_url] = "https://image.tmdb.org/t/p/w185#{movie_data['poster_path']}"
-      item[:score] = (movie_data['vote_average'] * 10).to_i
-      results << item
+    search_results.each do |movie_data|
+      movie = Movie.find_by tmdb_movie_id: movie_data['id']
+      movie = new_movie(movie_data) if movie.nil?
+      movie.save
+      results << movie
+      # item = {}
+      # item[:tmbd_movie_id] = movie_data['id']
+      # item[:name] = movie_data['title']
+      # item[:overview] = movie_data['overview']
+      # item[:release_year] = movie_data['release_date'][0...4]
+      # item[:poster_url] = "https://image.tmdb.org/t/p/w185#{movie_data['poster_path']}"
+      # item[:score] = (movie_data['vote_average'] * 10).to_i
+      # results << item
     end
-
-    render json: results, status: :ok
+    if user_signed_in?
+      render json: { results: ResultsSerializer.new(results).serializable_hash[:data], user: current_user, watchlists: WatchlistSerializer.new(current_user.watchlists).serializable_hash[:data] },
+             status: :ok
+    else
+      render json: ResultsSerializer.new(results).serializable_hash[:data], status: :ok
+    end
   end
 
   def show
@@ -74,12 +82,33 @@ class Api::V1::MoviesController < Api::V1::BaseController
     movie = show_api_call(id) if movie.nil?
 
     # add to viewing history
-    UserHistory.create!(user: current_user, movie:, visited_on: DateTime.now) if user_signed_in?
+    add_to_history(movie) if user_signed_in?
 
     render json: MovieSerializer.new(movie).serializable_hash[:data][:attributes]
   end
 
   private
+
+  def add_to_history(movie)
+    # check if movie is already in history
+    history = UserHistory.find_by user: current_user, movie: movie
+    debugger
+    if history.nil?
+      # add to history
+      UserHistory.create!(user: current_user, movie:, visited_on: DateTime.now)
+    else
+      # update history
+      history.update(visited_on: DateTime.now)
+    end
+
+    # keep history to 20 items
+    total_history_items = UserHistory.where(user: current_user).all
+    if total_history_items.count > 20
+      # delete the oldest item
+      oldest_item = total_items.max_by(&:visited_on)
+      oldest_item.destroy
+    end
+  end
 
   def new_movie(data)
     new_movie = Movie.new
@@ -89,16 +118,15 @@ class Api::V1::MoviesController < Api::V1::BaseController
     new_movie.release_date = Date.parse(data['release_date'])
     new_movie.poster_url = "https://image.tmdb.org/t/p/w185#{data['poster_path']}"
     new_movie.tmdb_movie_id = data['id']
+    new_movie.popularity = data['popularity']
     new_movie
   end
 
   def add_genres(genre_ids, movie)
     genre_ids.each do |genre|
-      movie_genre = MovieGenre.new
-      movie_genre.movie = movie
-      movie_genre.genre = Genre.find_by name: genre['name']
-      movie_genre.genre = Genre.create(name: genre['name'], tmdb_genre_id: genre['id']) if movie_genre.genre.nil?
-      movie_genre.save
+      movie_genre = Genre.find_by name: genre['name']
+      movie_genre = Genre.create(name: genre['name'], tmdb_genre_id: genre['id']) if movie_genre.nil?
+      movie.genres << movie_genre
     end
   end
 
@@ -136,9 +164,7 @@ class Api::V1::MoviesController < Api::V1::BaseController
   end
 
   def add_trailer(videos, movie)
-    key = videos.find do |video|
-            video[:type] == 'Trailer' && video[:site] == 'YouTube'
-          end[:key]
+    key = videos.find { |video| video['type'] == 'Trailer' && video['site'] == 'YouTube' }['key']
     movie.trailer_url = "https://www.youtube.com/watch?v=#{key}"
     movie.save
   end
@@ -164,7 +190,7 @@ class Api::V1::MoviesController < Api::V1::BaseController
     add_genres(movie_data['genres'], movie)
     add_cast(movie_data['credits'], movie)
     add_trailer(movie_data['videos']['results'], movie)
-    add_recommendations(movie_data['recommendations']['results'], movie)
+    # add_recommendations(movie_data['recommendations']['results'], movie)
     movie
   end
 end
