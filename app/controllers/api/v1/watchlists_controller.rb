@@ -18,36 +18,40 @@ class Api::V1::WatchlistsController < Api::V1::BaseController
     @watchlist = Watchlist.new(watchlist_params)
     @watchlist.user = current_user
     if @watchlist.save
-      render json: WatchlistSerializer.new(@watchlist).serializable_hash[:data], status: :created
+      render json: WatchlistSerializer.new(@watchlist).serializable_hash[:data][:attributes], status: :created
     else
       render_error(@watchlist)
     end
   end
 
   def destroy
-    watchlist = Watchlist.find(params[:id])
-    watchlist.destroy
+    @watchlist = Watchlist.find(params[:id])
+    @watchlist.destroy
     head :no_content
   end
 
   def update
     @watchlist = Watchlist.find(params[:id])
 
-    unless params[:movie_id].nil?
-      case params[:action]
-      when 'add'
-        movie = Movie.find(params[:movie_id])
-        @watchlist.movies << movie
-      when 'remove'
-        movie = Movie.find(params[:movie_id])
-        @watchlist.movies.delete(movie)
-      when 'mark_watched'
-        movie = Movie.find(params[:movie_id])
-        WatchlistMovie.find_by(movie:, watchlist: @watchlist).update(watched: true)
-      end
-    end
     if @watchlist.update(watchlist_params)
-      render json: WatchlistSerializer.new(@watchlist).serializable_hash[:data][:attributes]
+
+      if params[:movie_id].nil?
+        render json: WatchlistSerializer.new(@watchlist).serializable_hash[:data][:attributes]
+      else
+        @movie = Movie.find(params[:movie_id])
+        @watchlist_movie = WatchlistMovie.find_by watchlist: @watchlist, movie: @movie
+        case params[:movie_action]
+        when 'add'
+          # TODO: background job to get the rest of the movie info if complete_data is false
+          add_to_watchlist(@watchlist, @movie, @watchlist_movie)
+        when 'remove'
+          remove_from_watchlist(@watchlist, @movie, @watchlist_movie)
+        when 'toggle_watched'
+          toggle_watched(@watchlist, @movie, @watchlist_movie)
+        else
+          render json: { error: 'invalid action' }, status: :unprocessable_entity
+        end
+      end
     else
       render_error(@watchlist)
     end
@@ -55,7 +59,50 @@ class Api::V1::WatchlistsController < Api::V1::BaseController
 
   private
 
+  def add_to_watchlist(watchlist, movie, watchlist_movie)
+    render json: { error: 'movie already in watchlist' } and return unless watchlist_movie.nil?
+
+    watchlist_movie = WatchlistMovie.create!(movie:, watchlist:)
+    watchlist.watchlist_movies << watchlist_movie
+    watchlist.total_items += 1
+    watchlist.unwatched_runtime += movie.duration
+    watchlist.score_sum += movie.score
+    save_watchlist(watchlist)
+  end
+
+  def remove_from_watchlist(watchlist, movie, watchlist_movie)
+    render json: { error: 'movie not in watchlist' } and return if watchlist_movie.nil?
+
+    watchlist.watchlist_movies.delete(watchlist_movie)
+    watchlist.total_items -= 1
+    watchlist.unwatched_runtime -= movie.duration
+    watchlist.score_sum -= movie.score
+    save_watchlist(watchlist)
+  end
+
+  def toggle_watched(watchlist, movie, watchlist_movie)
+    render json: { error: 'movie not in watchlist' } and return if watchlist_movie.nil?
+
+    if watchlist_movie.watched
+      watchlist_movie.watched = false
+      watchlist.unwatched_runtime += movie.duration
+    else
+      watchlist_movie.watched = true
+      watchlist.unwatched_runtime -= movie.duration
+    end
+    watchlist_movie.save
+    save_watchlist(watchlist)
+  end
+
+  def save_watchlist(watchlist)
+    if watchlist.save
+      render json: WatchlistSerializer.new(watchlist).serializable_hash[:data][:attributes]
+    else
+      render_error(watchlist)
+    end
+  end
+
   def watchlist_params
-    params.permit(:name, :description, :movie_id, :action)
+    params.permit(:name, :description)
   end
 end

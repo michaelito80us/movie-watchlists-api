@@ -1,6 +1,8 @@
 class WatchlistMovieSerializer
   include JSONAPI::Serializer
-  attributes :movie_id, :watchlist_id, :watched, :score
-  belongs_to :movie
-  belongs_to :watchlist
+  attributes :watched
+
+  attribute :movie do |object|
+    MovieIntroSerializer.new(object.movie).serializable_hash[:data][:attributes]
+  end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2022_10_22_152533) do
+ActiveRecord::Schema[7.0].define(version: 2022_10_23_175105) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -60,6 +60,7 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_22_152533) do
     t.boolean "complete_data", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "watch_provider"
   end
 
   create_table "movies_genres", id: false, force: :cascade do |t|
@@ -67,6 +68,13 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_22_152533) do
     t.bigint "genre_id"
     t.index ["genre_id"], name: "index_movies_genres_on_genre_id"
     t.index ["movie_id"], name: "index_movies_genres_on_movie_id"
+  end
+
+  create_table "recommendations", force: :cascade do |t|
+    t.bigint "movie_id", null: false
+    t.bigint "recommended_movie_id", null: false
+    t.index ["movie_id"], name: "index_recommendations_on_movie_id"
+    t.index ["recommended_movie_id"], name: "index_recommendations_on_recommended_movie_id"
   end
 
   create_table "user_histories", force: :cascade do |t|
@@ -98,7 +106,7 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_22_152533) do
   create_table "watchlist_movies", force: :cascade do |t|
     t.bigint "watchlist_id", null: false
     t.bigint "movie_id", null: false
-    t.boolean "watched"
+    t.boolean "watched", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["movie_id"], name: "index_watchlist_movies_on_movie_id"
@@ -111,7 +119,7 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_22_152533) do
     t.bigint "user_id", null: false
     t.integer "unwatched_runtime", default: 0
     t.integer "total_items", default: 0
-    t.integer "score_sum"
+    t.integer "score_sum", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_watchlists_on_user_id"
@@ -119,6 +127,8 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_22_152533) do
 
   add_foreign_key "movie_casts", "casts"
   add_foreign_key "movie_casts", "movies"
+  add_foreign_key "recommendations", "movies"
+  add_foreign_key "recommendations", "movies", column: "recommended_movie_id"
   add_foreign_key "user_histories", "movies"
   add_foreign_key "user_histories", "users"
   add_foreign_key "watchlist_movies", "movies"

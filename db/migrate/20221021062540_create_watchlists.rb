@@ -6,7 +6,7 @@ class CreateWatchlists < ActiveRecord::Migration[7.0]
       t.references :user, null: false, foreign_key: true
       t.integer :unwatched_runtime, default: 0
       t.integer :total_items, default: 0
-      t.integer :score_sum
+      t.integer :score_sum, default: 0
 
       t.timestamps
     end

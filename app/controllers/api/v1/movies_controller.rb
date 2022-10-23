@@ -68,7 +68,9 @@ class Api::V1::MoviesController < Api::V1::BaseController
       # results << item
     end
     if user_signed_in?
-      render json: { results: ResultsSerializer.new(results).serializable_hash[:data], user: current_user, watchlists: WatchlistSerializer.new(current_user.watchlists).serializable_hash[:data] },
+      render json: { results: ResultsSerializer.new(results).serializable_hash[:data],
+                     user: current_user,
+                     watchlists: WatchlistSerializer.new(current_user.watchlists).serializable_hash[:data] },
              status: :ok
     else
       render json: ResultsSerializer.new(results).serializable_hash[:data], status: :ok
@@ -92,7 +94,6 @@ class Api::V1::MoviesController < Api::V1::BaseController
   def add_to_history(movie)
     # check if movie is already in history
     history = UserHistory.find_by user: current_user, movie: movie
-    debugger
     if history.nil?
       # add to history
       UserHistory.create!(user: current_user, movie:, visited_on: DateTime.now)
@@ -170,27 +171,33 @@ class Api::V1::MoviesController < Api::V1::BaseController
   end
 
   def add_recommendations(recommended_movies, movie)
-    recommended_movies.each do |_recommended_movie|
-      recommended_movie = Movie.find_by tmdb_movie_id: movie['id']
-      recommended_movie = new_movie(movie) if movie.nil?
+    recommended_movies.each do |recommendation|
+      recommended_movie = Movie.find_by tmdb_movie_id: recommendation['id']
+      recommended_movie = new_movie(recommendation) if recommended_movie.nil?
+      recommended_movie.save
+      movie.recommended_movies << recommended_movie
     end
   end
 
   def show_api_call(id)
     puts '***** I MADE AN API CALL *****'
-    url = "https://api.themoviedb.org/3/movie/#{id}?api_key=#{API_KEY}&language=en-US&append_to_response=credits,recommendations,videos"
+    url = "https://api.themoviedb.org/3/movie/#{id}?api_key=#{API_KEY}&language=en-US&append_to_response=credits,recommendations,videos,watch%2Fproviders"
     response = Faraday.get(url)
     # render the data
     movie_data = JSON.parse(response.body)
+    render json: { error: 'Movie not found' }, status: :not_found and return if movie_data['status_code'] == 34
 
     movie = new_movie(movie_data)
     movie.duration = (movie_data['runtime']).to_i
     movie.complete_data = true
+    unless movie_data['watch/providers']['results']['US']['flatrate'].nil?
+      movie.watch_provider = movie_data['watch/providers']['results']['US']['flatrate'][0]['provider_name']
+    end
     movie.save
     add_genres(movie_data['genres'], movie)
     add_cast(movie_data['credits'], movie)
     add_trailer(movie_data['videos']['results'], movie)
-    # add_recommendations(movie_data['recommendations']['results'], movie)
+    add_recommendations(movie_data['recommendations']['results'], movie)
     movie
   end
 end

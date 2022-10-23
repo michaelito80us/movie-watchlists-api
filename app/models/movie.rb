@@ -8,10 +8,8 @@ class Movie < ApplicationRecord
   has_many :watchlists, through: :watchlist_movies
   has_many :user_histories, dependent: :destroy
 
-  has_many :recommended_movies, class_name: 'Movie', foreign_key: 'recommended_by_id'
-  # has_many :is_recommended_movies, class_name: 'Movie', foreign_key: 'is_recommended_movie_id'
-  # has_many :recommended_movies, through: :is_recommended_movies
-  # has_many :is_recommended_movies, through: :recommended_movies
+  has_many :recommendations, dependent: :destroy
+  has_many :recommended_movies, through: :recommendations
 
   def full_details?
     full_details

@@ -2,7 +2,7 @@
 class MovieSerializer
   include JSONAPI::Serializer
   attributes :name, :id, :duration, :overview, :score, :release_date, :poster_url, :tmdb_movie_id, :trailer_url,
-             :popularity
+             :popularity, :watch_provider
   # has_many :movie_casts
   # has_many :casts, through: :movie_casts
 
@@ -26,6 +26,13 @@ class MovieSerializer
         image_url: movie_cast.cast.image_url,
         job: movie_cast.job
       }
+    end
+  end
+
+  attribute :recommended_movies do |object|
+    object.recommendations.sample(5).map do |recommendation|
+      movie = Movie.find(recommendation.recommended_movie_id)
+      MovieIntroSerializer.new(movie).serializable_hash[:data][:attributes]
     end
   end
 
