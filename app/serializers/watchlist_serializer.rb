@@ -12,7 +12,7 @@ class WatchlistSerializer
 
   attribute :movie_list do |object|
     object.watchlist_movies.map do |watchlist_movie|
-      WatchlistMovieSerializer.new(watchlist_movie).serializable_hash[:data][:attributes]
+      WatchlistMovieSerializer.new(watchlist_movie).serializable_hash[:data]
     end
     # object.movies.map do |watchlist_movie|
     #   MovieIntroSerializer.new(watchlist_movie).serializable_hash[:data][:attributes]

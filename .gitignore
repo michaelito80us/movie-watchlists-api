@@ -30,3 +30,6 @@
 
 **/.DS_Store
 .DS_Store
+
+
+# foreman start -f Procfile.dev

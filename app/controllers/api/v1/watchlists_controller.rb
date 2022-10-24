@@ -1,9 +1,12 @@
 # app/controllers/api/v1/watchlists_controller.rb
 class Api::V1::WatchlistsController < Api::V1::BaseController
-  # def index
-  #   watchlists = Watchlist.where(user: current_user)
-  #   render json: watchlists
-  # end
+  # concern
+  include AddMovie
+
+  def index
+    @watchlists = current_user.watchlists
+    render json: WatchlistIntroSerializer.new(@watchlists).serializable_hash[:data]
+  end
 
   def show
     @watchlist = Watchlist.find(params[:id])
@@ -42,7 +45,9 @@ class Api::V1::WatchlistsController < Api::V1::BaseController
         @watchlist_movie = WatchlistMovie.find_by watchlist: @watchlist, movie: @movie
         case params[:movie_action]
         when 'add'
-          # TODO: background job to get the rest of the movie info if complete_data is false
+          tmdb_movie_id = @movie.tmdb_movie_id
+          @movie = show_api_call(tmdb_movie_id)
+          # GetMovieDetailsJob.perform_later(@movie) unless @movie.complete_data
           add_to_watchlist(@watchlist, @movie, @watchlist_movie)
         when 'remove'
           remove_from_watchlist(@watchlist, @movie, @watchlist_movie)
@@ -52,6 +57,7 @@ class Api::V1::WatchlistsController < Api::V1::BaseController
           render json: { error: 'invalid action' }, status: :unprocessable_entity
         end
       end
+      # save_watchlist(@watchlist)
     else
       render_error(@watchlist)
     end
