@@ -10,11 +10,10 @@ module AddMovie
     movie_data = JSON.parse(response.body)
     render json: { error: 'Movie not found' }, status: :not_found and return if movie_data['status_code'] == 34
 
-    movie = Movie.find_by tmdb_movie_id: movie_data['id']
+    movie = Movie.find_by tmdb_movie_id: id
     movie = new_movie(movie_data) if movie.nil?
-
     movie.duration = (movie_data['runtime']).to_i
-    unless movie_data['watch/providers']['results']['US']['flatrate'].nil?
+    unless (movie_data['watch/providers'] && movie_data['watch/providers']['results']['US'] && movie_data['watch/providers']['results']['US']['flatrate']).nil?
       movie.watch_provider = movie_data['watch/providers']['results']['US']['flatrate'][0]['provider_name']
     end
     movie.save

@@ -1,7 +1,7 @@
 # app/controllers/api/v1/movies_controller.rb
 class Api::V1::MoviesController < Api::V1::BaseController
   API_KEY = Rails.application.credentials.tmdb_api_key
-  skip_before_action :authenticate_user!, only: %i[index show]
+  skip_before_action :authenticate_user!, only: %i[index show search]
 
   include AddMovie
 
@@ -24,7 +24,7 @@ class Api::V1::MoviesController < Api::V1::BaseController
                      watchlists: WatchlistIntroSerializer.new(current_user.watchlists).serializable_hash[:data] },
              status: :ok
     else
-      render json: ResultsSerializer.new(results).serializable_hash[:data], status: :ok
+      render json: { results: ResultsSerializer.new(results).serializable_hash[:data] }, status: :ok
     end
   end
 
@@ -90,6 +90,6 @@ class Api::V1::MoviesController < Api::V1::BaseController
   end
 
   def search_strong_params
-    params.permit(:query, :page)
+    params.require(:search).permit(:query, :page)
   end
 end
