@@ -9,6 +9,14 @@ class User < ApplicationRecord
   has_many :watchlists, dependent: :destroy
   has_many :user_histories, dependent: :destroy
 
+  has_one_attached :avatar
+
+  # after_commit :add_default_avatar, on: %i[create]
+
+  def avatar_thumbnail
+    avatar.attached? ? avatar.variant(resize_and_pad: [100, 100]).processed.url : ''
+  end
+
   def jwt_payload # rubocop:disable Lint/UselessMethodDefinition
     super
   end

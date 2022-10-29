@@ -2,16 +2,16 @@
 class Users::SessionsController < Devise::SessionsController
   respond_to :json
 
+
   private
 
-  def respond_with(_resource, _opts = {})
+  def respond_with(resource, _opts = {})
     render json: {
       satus: { code: 200, message: 'Logged in successfully.',
                data: {
-                 user: UserSerializer.new(current_user).serializable_hash[:data][:attributes],
-                 watchlists: WatchlistIntroSerializer.new(current_user.watchlists).serializable_hash[:data]
+                 user: UserSerializer.new(resource).serializable_hash[:data][:attributes],
+                 watchlists: WatchlistIntroSerializer.new(resource.watchlists).serializable_hash[:data]
                } }
-      #  data: current_user }
     }, status: :ok
   end
 

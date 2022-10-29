@@ -16,6 +16,7 @@ Rails.application.routes.draw do
       get 'index', to: 'movies#index'
       get 'movies/:tmdb_movie_id', to: 'movies#show'
       get 'search', to: 'movies#search'
+      put 'users/:id', to: 'users#update'
       resources :watchlists
       get 'history', to: 'histories#index'
     end
