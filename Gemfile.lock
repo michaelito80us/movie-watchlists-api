@@ -145,12 +145,14 @@ GEM
     net-smtp (0.3.2)
       net-protocol
     netrc (0.11.0)
-    nio4r (2.5.8)
+    nio4r (2.7.4)
     nokogiri (1.13.8-arm64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.13.8-x86_64-linux)
       racc (~> 1.4)
     orm_adapter (0.5.0)
     pg (1.4.4)
-    puma (5.6.5)
+    puma (5.6.9)
       nio4r (~> 2.0)
     racc (1.6.0)
     rack (2.2.4)
@@ -219,6 +221,7 @@ GEM
 
 PLATFORMS
   arm64-darwin-21
+  x86_64-linux
 
 DEPENDENCIES
   bootsnap
@@ -230,7 +233,7 @@ DEPENDENCIES
   image_processing (~> 1.2)
   jsonapi-serializer
   pg (~> 1.1)
-  puma (~> 5.0)
+  puma (~> 5.6)
   rack-cors
   rails (~> 7.0.4)
   tzinfo-data
